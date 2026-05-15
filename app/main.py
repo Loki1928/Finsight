@@ -2,21 +2,24 @@
 from fastapi import FastAPI
 from app.db.session import engine, Base
 from app.models import models  # noqa: F401 — ensures models register with Base
-from app.api import dashboard, uploads, transactions
+from app.api import dashboard, uploads, transactions, debug
+from app.db.bootstrap import ensure_default_account
 
 app = FastAPI(title="Finsight", version="0.1.0")
 
 
 @app.on_event("startup")
-def _create_tables():
+def _startup():
     """V1 simplified: create tables on startup instead of running Alembic.
-    Alembic config will be added before V1.1 / first schema change."""
+    Also bootstrap the default HDFC account so uploads have something to bind to."""
     Base.metadata.create_all(bind=engine)
+    ensure_default_account()
 
 
 app.include_router(dashboard.router)
 app.include_router(uploads.router)
 app.include_router(transactions.router)
+app.include_router(debug.router)
 
 
 @app.get("/health")
