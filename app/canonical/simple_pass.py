@@ -9,6 +9,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.models import RawTransaction, CanonicalEvent
+from app.canonical.categorize import categorize_event
 
 
 def materialize_canonical(db: Session, upload_id: int) -> int:
@@ -40,6 +41,7 @@ def materialize_canonical(db: Session, upload_id: int) -> int:
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
+        categorize_event(event)
         db.add(event)
         db.flush()  # get event.id
         r.canonical_event_id = event.id
