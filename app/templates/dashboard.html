@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Finsight{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
+
+<div class="bg-white rounded-lg border border-slate-200 p-6 mb-6">
+  <div class="text-sm text-slate-500">Total spend</div>
+  <div class="text-3xl font-semibold mt-1">₹{{ "%.2f"|format(total_spend or 0) }}</div>
+</div>
+
+<div class="bg-white rounded-lg border border-slate-200 p-6">
+  <h2 class="text-lg font-medium mb-4">Spend by category</h2>
+  {% if by_category %}
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-slate-500 border-b border-slate-200">
+          <th class="py-2">Category</th>
+          <th class="py-2 text-right">Count</th>
+          <th class="py-2 text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in by_category %}
+        <tr class="border-b border-slate-100">
+          <td class="py-2">{{ row.category or "Uncategorized" }}</td>
+          <td class="py-2 text-right">{{ row.count }}</td>
+          <td class="py-2 text-right">₹{{ "%.2f"|format(row.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-slate-500 text-sm">No transactions yet. <a href="/upload" class="text-blue-600 hover:underline">Upload a statement</a> to see your spending.</p>
+  {% endif %}
+</div>
+{% endblock %}

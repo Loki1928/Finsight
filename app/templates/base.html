@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Finsight{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+  <nav class="bg-white border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-6">
+      <a href="/" class="font-semibold text-lg">Finsight</a>
+      <a href="/" class="text-sm text-slate-600 hover:text-slate-900">Dashboard</a>
+      <a href="/transactions" class="text-sm text-slate-600 hover:text-slate-900">Transactions</a>
+      <a href="/upload" class="text-sm text-slate-600 hover:text-slate-900">Upload</a>
+    </div>
+  </nav>
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

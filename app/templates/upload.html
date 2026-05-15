@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Upload — Finsight{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Upload statement</h1>
+
+{% if message %}
+<div class="bg-blue-50 border border-blue-200 text-blue-900 rounded-md px-4 py-3 mb-4 text-sm">
+  {{ message }}
+</div>
+{% endif %}
+
+<form method="post" action="/upload" enctype="multipart/form-data" class="bg-white rounded-lg border border-slate-200 p-6 max-w-lg">
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-1">HDFC statement PDF</label>
+    <input type="file" name="file" accept="application/pdf" required class="block w-full text-sm" />
+  </div>
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-1">PDF password (if any)</label>
+    <input type="password" name="password" placeholder="Leave blank if not protected" class="block w-full text-sm border border-slate-300 rounded-md px-3 py-2" />
+    <p class="text-xs text-slate-500 mt-1">Stays on this server only. Never sent anywhere else.</p>
+  </div>
+  <button type="submit" class="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-slate-800">
+    Upload
+  </button>
+</form>
+{% endblock %}
