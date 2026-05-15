@@ -1,27 +1,78 @@
 {% extends "base.html" %}
 {% block title %}Transactions — Finsight{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Transactions</h1>
+<h1 class="text-2xl font-semibold mb-2">Transactions</h1>
+{% if summary.filename %}
+<p class="text-sm text-slate-500 mb-6">Source: <span class="font-mono text-xs">{{ summary.filename }}</span></p>
+{% endif %}
+
+{% if summary.total_count > 0 %}
+<div class="bg-white rounded-lg border border-slate-200 p-4 mb-6 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+  <div>
+    <div class="text-slate-500 text-xs uppercase tracking-wide">Total rows</div>
+    <div class="text-xl font-semibold mt-1">{{ summary.total_count }}</div>
+  </div>
+  <div>
+    <div class="text-slate-500 text-xs uppercase tracking-wide">Debits</div>
+    <div class="text-xl font-semibold mt-1 text-red-600">{{ summary.debit_count }}</div>
+    <div class="text-xs text-slate-500 mt-0.5">₹{{ "{:,.2f}".format(summary.debits_total) }}</div>
+  </div>
+  <div>
+    <div class="text-slate-500 text-xs uppercase tracking-wide">Credits</div>
+    <div class="text-xl font-semibold mt-1 text-green-600">{{ summary.credit_count }}</div>
+    <div class="text-xs text-slate-500 mt-0.5">₹{{ "{:,.2f}".format(summary.credits_total) }}</div>
+  </div>
+  <div>
+    <div class="text-slate-500 text-xs uppercase tracking-wide">Net</div>
+    <div class="text-xl font-semibold mt-1 {% if summary.net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+      {% if summary.net >= 0 %}+{% endif %}₹{{ "{:,.2f}".format(summary.net) }}
+    </div>
+  </div>
+  <div>
+    <div class="text-slate-500 text-xs uppercase tracking-wide">Parser status</div>
+    <div class="text-xl font-semibold mt-1 {% if summary.upload_status == 'success' %}text-green-600{% else %}text-amber-600{% endif %}">
+      {{ summary.upload_status or '—' }}
+    </div>
+    {% if summary.upload_warnings %}
+      <div class="text-xs text-amber-700 mt-0.5">Has warnings</div>
+    {% else %}
+      <div class="text-xs text-slate-500 mt-0.5">Totals match summary</div>
+    {% endif %}
+  </div>
+</div>
+{% if summary.upload_warnings %}
+<div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-md px-4 py-3 mb-6 text-sm">
+  <div class="font-medium mb-1">Parser warnings:</div>
+  <pre class="text-xs whitespace-pre-wrap">{{ summary.upload_warnings }}</pre>
+</div>
+{% endif %}
+{% endif %}
 
 {% if rows %}
 <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
   <table class="w-full text-sm">
     <thead class="bg-slate-50">
       <tr class="text-left text-slate-500 border-b border-slate-200">
+        <th class="px-4 py-2 w-12 text-right">#</th>
         <th class="px-4 py-2">Date</th>
         <th class="px-4 py-2">Merchant</th>
         <th class="px-4 py-2">Category</th>
         <th class="px-4 py-2 text-right">Amount</th>
+        <th class="px-4 py-2 text-right">Balance</th>
       </tr>
     </thead>
     <tbody>
       {% for r in rows %}
       <tr class="border-b border-slate-100">
-        <td class="px-4 py-2">{{ r.event_date }}</td>
+        <td class="px-4 py-2 text-right text-slate-400 font-mono">{{ loop.index }}</td>
+        <td class="px-4 py-2 whitespace-nowrap">{{ r.event_date }}</td>
         <td class="px-4 py-2">{{ r.merchant_normalized or r.merchant_raw or "—" }}</td>
         <td class="px-4 py-2">{{ r.category or "—" }}</td>
-        <td class="px-4 py-2 text-right {% if r.direction == 'debit' %}text-red-600{% else %}text-green-600{% endif %}">
-          {% if r.direction == 'debit' %}-{% else %}+{% endif %}₹{{ "%.2f"|format(r.amount) }}
+        <td class="px-4 py-2 text-right whitespace-nowrap {% if r.direction == 'debit' %}text-red-600{% else %}text-green-600{% endif %}">
+          {% if r.direction == 'debit' %}-{% else %}+{% endif %}₹{{ "{:,.2f}".format(r.amount) }}
+        </td>
+        <td class="px-4 py-2 text-right text-slate-500 whitespace-nowrap text-xs">
+          {% if r.raw_row %}—{% else %}—{% endif %}
         </td>
       </tr>
       {% endfor %}
