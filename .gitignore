@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Finsight specific
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+sample_statements/
+private_data/
+.env
