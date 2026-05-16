@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from app.db.session import engine, Base
 from app.models import models  # noqa: F401 — ensures models register with Base
-from app.api import dashboard, uploads, transactions, debug
+from app.api import dashboard, uploads, transactions
 from app.db.bootstrap import ensure_default_account
 
 app = FastAPI(title="Finsight", version="0.1.0")
@@ -19,7 +19,6 @@ def _startup():
 app.include_router(dashboard.router)
 app.include_router(uploads.router)
 app.include_router(transactions.router)
-app.include_router(debug.router)
 
 
 @app.get("/health")
