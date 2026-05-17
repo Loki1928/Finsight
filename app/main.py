@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from app.db.session import engine, Base
 from app.models import models  # noqa: F401 — ensures models register with Base
 from app.api import dashboard, uploads, transactions
-from app.db.bootstrap import ensure_default_account
+from app.db.bootstrap import ensure_default_accounts
 
 app = FastAPI(title="Finsight", version="0.1.0")
 
@@ -11,9 +11,10 @@ app = FastAPI(title="Finsight", version="0.1.0")
 @app.on_event("startup")
 def _startup():
     """V1 simplified: create tables on startup instead of running Alembic.
-    Also bootstrap the default HDFC account so uploads have something to bind to."""
+    Also bootstrap default accounts (HDFC + Cash) so uploads and manual
+    entries have accounts to bind to."""
     Base.metadata.create_all(bind=engine)
-    ensure_default_account()
+    ensure_default_accounts()
 
 
 app.include_router(dashboard.router)

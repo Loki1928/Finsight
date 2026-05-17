@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Add transaction · Finsight{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Add transaction</h1>
+
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6 max-w-xl">
+  <form method="POST" action="/transactions/add" class="space-y-5">
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">Date</label>
+      <input type="date" name="event_date" value="{{ today }}" required
+             class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">Amount (₹)</label>
+      <input type="number" name="amount" step="0.01" min="0.01" required
+             placeholder="e.g. 500.00"
+             class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">Direction</label>
+      <div class="flex gap-4 text-sm">
+        <label class="flex items-center gap-2">
+          <input type="radio" name="direction" value="debit" checked />
+          Debit (money out)
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="radio" name="direction" value="credit" />
+          Credit (money in)
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">Account</label>
+      <select name="account_id" required
+              class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white">
+        {% for a in accounts %}
+          <option value="{{ a.id }}" {% if a.name == "Cash" %}selected{% endif %}>
+            {{ a.name }} ({{ a.type }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">
+        Merchant / description <span class="text-slate-400 font-normal">(optional)</span>
+      </label>
+      <input type="text" name="merchant" maxlength="200"
+             placeholder="e.g. Auto rickshaw, CRED cashback, Gift from Rishi"
+             class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+    </div>
+
+   <div>
+      <label class="block text-sm font-semibold mb-1">
+        Category <span class="text-slate-400 font-normal">(optional — auto-detected if blank)</span>
+      </label>
+      <input type="text" name="category" list="category-suggestions" maxlength="50"
+             placeholder="Pick from list or type your own (e.g. Pet supplies, School fees)"
+             class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+      <datalist id="category-suggestions">
+        <option value="Cash Spend">
+        <option value="Food">
+        <option value="Fuel">
+        <option value="Groceries">
+        <option value="Shopping">
+        <option value="Entertainment">
+        <option value="Travel">
+        <option value="Bill Payment (CRED)">
+        <option value="Transfer">
+        <option value="P2P Transfer">
+        <option value="Income">
+        <option value="Investments">
+        <option value="Loans/EMI">
+        <option value="Bank Charges">
+        <option value="Other">
+      </datalist>
+      <p class="text-xs text-slate-500 mt-1">Leave blank to let the system auto-detect from merchant.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-1">
+        Notes <span class="text-slate-400 font-normal">(optional)</span>
+      </label>
+      <textarea name="notes" rows="2" maxlength="500"
+                placeholder="Anything you want to remember about this entry"
+                class="w-full border border-slate-300 rounded px-3 py-2 text-sm"></textarea>
+    </div>
+
+    <div class="pt-2">
+      <button type="submit"
+              class="bg-slate-900 text-white px-4 py-2 rounded text-sm font-medium hover:bg-slate-800">
+        Save transaction
+      </button>
+      <a href="/transactions"
+         class="ml-3 text-sm text-slate-600 hover:text-slate-900">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
