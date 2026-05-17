@@ -65,6 +65,7 @@ def transactions(request: Request, db: Session = Depends(get_db)):
         .all()
     )
     # Summary stats
+   # Summary stats
     total_count = len(rows)
     debits = [r for r in rows if r.direction == "debit"]
     credits = [r for r in rows if r.direction == "credit"]
@@ -72,6 +73,8 @@ def transactions(request: Request, db: Session = Depends(get_db)):
     credit_count = len(credits)
     debits_total = sum(r.amount for r in debits)
     credits_total = sum(r.amount for r in credits)
+    # Manual-entry count — surfaces how much of the data is user-added vs parsed.
+    manual_count = sum(1 for r in rows if r.is_user_edited)
     # Most recent upload — used to show "expected" numbers from the PDF summary,
     # if the parser captured them in error_log warnings (it would only do this on
     # mismatch). When no warnings, we just show "matches".
@@ -87,6 +90,7 @@ def transactions(request: Request, db: Session = Depends(get_db)):
         "debits_total": debits_total,
         "credits_total": credits_total,
         "net": credits_total - debits_total,
+        "manual_count": manual_count,
         "upload_status": latest_upload.status if latest_upload else None,
         "upload_warnings": latest_upload.error_log if latest_upload else None,
         "filename": latest_upload.filename if latest_upload else None,

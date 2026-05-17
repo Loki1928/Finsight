@@ -11,6 +11,9 @@
   <div>
     <div class="text-slate-500 text-xs uppercase tracking-wide">Total rows</div>
     <div class="text-xl font-semibold mt-1">{{ summary.total_count }}</div>
+    {% if summary.manual_count and summary.manual_count > 0 %}
+      <div class="text-xs text-slate-500 mt-0.5">{{ summary.manual_count }} manual</div>
+    {% endif %}
   </div>
   <div>
     <div class="text-slate-500 text-xs uppercase tracking-wide">Debits</div>
