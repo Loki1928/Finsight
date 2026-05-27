@@ -6,7 +6,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.models import CanonicalEvent, Upload, Account
+from app.models.models import CanonicalEvent, Upload, Account, User
+from app.auth.dependencies import require_user
 from app.canonical.categorize import categorize_event
 
 router = APIRouter()
@@ -57,7 +58,7 @@ def _get_user_editable_event(db: Session, event_id: int) -> CanonicalEvent:
 
 
 @router.get("/transactions", response_class=HTMLResponse)
-def transactions(request: Request, db: Session = Depends(get_db)):
+def transactions(request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):
     # Chronological order to match PDF reading order
     rows = (
         db.query(CanonicalEvent)
@@ -102,7 +103,7 @@ def transactions(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/transactions/add", response_class=HTMLResponse)
-def transactions_add_form(request: Request, db: Session = Depends(get_db)):
+def transactions_add_form(request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):
     """Render the manual-entry form."""
     accounts = (
         db.query(Account)
@@ -130,6 +131,7 @@ def transactions_add_submit(
     category: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
+    user: User = Depends(require_user),
 ):
     """Persist a user-entered transaction as a CanonicalEvent.
 
@@ -175,7 +177,7 @@ def transactions_add_submit(
 
 
 @router.get("/transactions/{event_id}/edit", response_class=HTMLResponse)
-def transactions_edit_form(event_id: int, request: Request, db: Session = Depends(get_db)):
+def transactions_edit_form(event_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):
     """Render the edit form for a user-entered transaction."""
     event = _get_user_editable_event(db, event_id)
     accounts = (

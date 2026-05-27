@@ -9,7 +9,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db, DATA_DIR
-from app.models.models import Upload, RawTransaction
+from app.models.models import Upload, RawTransaction, User
+from app.auth.dependencies import require_user
 from app.parsers.hdfc_pdf import HDFCBankPDFAdapter
 from app.utils.pdf_unlock import PDFPasswordRequired, PDFWrongPassword
 from app.db.bootstrap import get_default_account_id
@@ -34,8 +35,8 @@ def _serialize_raw_row(raw: dict) -> str:
 
 
 @router.get("/upload", response_class=HTMLResponse)
-def upload_form(request: Request):
-    return templates.TemplateResponse("upload.html", {"request": request, "message": None})
+def upload_form(request: Request, user: User = Depends(require_user)):
+    return templates.TemplateResponse("upload.html", {"request": request, "message": None, "user": user})
 
 
 @router.post("/upload", response_class=HTMLResponse)
@@ -44,6 +45,7 @@ async def upload_submit(
     file: UploadFile = File(...),
     password: str | None = Form(None),
     db: Session = Depends(get_db),
+    user: User = Depends(require_user),
 ):
     contents = await file.read()
     file_hash = hashlib.sha256(contents).hexdigest()

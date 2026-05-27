@@ -6,14 +6,15 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.models import CanonicalEvent
+from app.models.models import CanonicalEvent, User
+from app.auth.dependencies import require_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", response_class=HTMLResponse)
-def dashboard(request: Request, db: Session = Depends(get_db)):
+def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):
     # ---- Spend side (debits, excluding internal transfers and CC bill payments) ----
     total_spend = (
         db.query(func.coalesce(func.sum(CanonicalEvent.amount), 0.0))
@@ -67,5 +68,6 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             "by_category": by_category,
             "total_income": total_income,
             "income_by_category": income_by_category,
+            "user": user,
         },
     )

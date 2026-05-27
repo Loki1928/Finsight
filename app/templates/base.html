@@ -14,6 +14,17 @@
       <a href="/transactions" class="text-sm text-slate-600 hover:text-slate-900">Transactions</a>
       <a href="/transactions/add" class="text-sm text-slate-600 hover:text-slate-900">Add transaction</a>
       <a href="/upload" class="text-sm text-slate-600 hover:text-slate-900">Upload</a>
+
+      {% if user %}
+      <div class="ml-auto flex items-center gap-3">
+        {% if user.picture_url %}
+        <img src="{{ user.picture_url }}" alt="avatar"
+             class="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200" />
+        {% endif %}
+        <span class="text-sm text-slate-700">{{ user.full_name or user.email }}</span>
+        <a href="/auth/logout" class="text-sm text-slate-500 hover:text-red-600">Log out</a>
+      </div>
+      {% endif %}
     </div>
   </nav>
   <main class="max-w-5xl mx-auto px-4 py-8">
