@@ -119,3 +119,18 @@ class AuditLog(Base):
     entity_id = Column(Integer)
     details = Column(Text)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    google_sub = Column(String, nullable=False, unique=True)
+    email = Column(String, nullable=False)
+    full_name = Column(String)
+    picture_url = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, default=datetime.utcnow)
+
+
+Index("idx_users_google_sub", User.google_sub)
+Index("idx_users_email", User.email)
