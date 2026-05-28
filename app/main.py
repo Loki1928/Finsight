@@ -61,8 +61,7 @@ def _startup():
             cur.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER")
         except sqlite3.OperationalError:
             pass  # column already exists — safe to ignore
-    conn.commit()
-    conn.close()
+   
 
     # Patch any rows with NULL user_id to user_id=1 (the first user)
     for table in ["canonical_events", "uploads", "raw_transactions"]:
