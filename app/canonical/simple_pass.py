@@ -12,7 +12,7 @@ from app.models.models import RawTransaction, CanonicalEvent
 from app.canonical.categorize import categorize_event
 
 
-def materialize_canonical(db: Session, upload_id: int) -> int:
+def materialize_canonical(db: Session, upload_id: int, user_id: int) -> int:
     """Create a CanonicalEvent for every RawTransaction from this upload
     that doesn't already have one. Returns the number created."""
     rows = (
@@ -38,6 +38,7 @@ def materialize_canonical(db: Session, upload_id: int) -> int:
             reconciliation_level=0,  # not reconciled, just materialized
             reconciliation_evidence=None,
             is_user_edited=0,
+            user_id=user_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )

@@ -115,7 +115,7 @@ async def upload_submit(
     db.commit()
 
     # Materialize canonical events (1:1 for V1)
-    canonical_count = materialize_canonical(db, upload.id)
+    canonical_count = materialize_canonical(db, upload.id, user.id)
 
     warning_summary = ""
     if result.warnings:
