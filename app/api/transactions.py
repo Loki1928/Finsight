@@ -151,7 +151,7 @@ def transactions_add_submit(
     merchant_clean = merchant.strip() or None
     notes_clean = notes.strip() or None
 
-   event = CanonicalEvent(
+    event = CanonicalEvent(
         event_date=parsed_date,
         amount=amount,
         direction=direction,
