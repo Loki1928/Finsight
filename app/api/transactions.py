@@ -62,6 +62,7 @@ def transactions(request: Request, db: Session = Depends(get_db), user: User = D
     # Chronological order to match PDF reading order
     rows = (
         db.query(CanonicalEvent)
+        .filter(CanonicalEvent.user_id == user.id)
         .order_by(CanonicalEvent.event_date.asc(), CanonicalEvent.id.asc())
         .all()
     )
@@ -150,7 +151,7 @@ def transactions_add_submit(
     merchant_clean = merchant.strip() or None
     notes_clean = notes.strip() or None
 
-    event = CanonicalEvent(
+   event = CanonicalEvent(
         event_date=parsed_date,
         amount=amount,
         direction=direction,
@@ -159,6 +160,7 @@ def transactions_add_submit(
         notes=notes_clean,
         is_user_edited=1,
         confidence_score=1.0,
+        user_id=user.id,
     )
 
     # Always run the categorizer so merchant_normalized is populated regardless

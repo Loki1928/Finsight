@@ -87,6 +87,7 @@ async def upload_submit(
         parser_version=adapter.parser_version,
         status="success" if not result.warnings else "partial",
         error_log="\n".join(result.warnings) if result.warnings else None,
+        user_id=user.id,
     )
     db.add(upload)
     db.commit()
@@ -108,6 +109,7 @@ async def upload_submit(
             reference_id=t.reference_id,
             upi_id=t.upi_id,
             raw_row_json=_serialize_raw_row(t.raw_row),
+            user_id=user.id,
         )
         db.add(rt)
     db.commit()

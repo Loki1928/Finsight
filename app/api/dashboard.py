@@ -18,6 +18,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     # ---- Spend side (debits, excluding internal transfers and CC bill payments) ----
     total_spend = (
         db.query(func.coalesce(func.sum(CanonicalEvent.amount), 0.0))
+        .filter(CanonicalEvent.user_id == user.id)
         .filter(CanonicalEvent.direction == "debit")
         .filter(CanonicalEvent.is_transfer == 0)
         .filter(CanonicalEvent.is_liability_payment == 0)
@@ -29,6 +30,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             func.sum(CanonicalEvent.amount).label("total"),
             func.count(CanonicalEvent.id).label("count"),
         )
+        .filter(CanonicalEvent.user_id == user.id)
         .filter(CanonicalEvent.direction == "debit")
         .filter(CanonicalEvent.is_transfer == 0)
         .filter(CanonicalEvent.is_liability_payment == 0)
@@ -43,6 +45,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     # appearing as credits on the receiving side).
     total_income = (
         db.query(func.coalesce(func.sum(CanonicalEvent.amount), 0.0))
+        .filter(CanonicalEvent.user_id == user.id)
         .filter(CanonicalEvent.direction == "credit")
         .filter(CanonicalEvent.is_transfer == 0)
         .scalar()
@@ -53,6 +56,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             func.sum(CanonicalEvent.amount).label("total"),
             func.count(CanonicalEvent.id).label("count"),
         )
+        .filter(CanonicalEvent.user_id == user.id)
         .filter(CanonicalEvent.direction == "credit")
         .filter(CanonicalEvent.is_transfer == 0)
         .group_by(CanonicalEvent.category)

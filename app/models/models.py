@@ -37,6 +37,7 @@ class Upload(Base):
     status = Column(String, nullable=False)
     error_log = Column(Text)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"))
 
 
 class RawTransaction(Base):
@@ -57,6 +58,7 @@ class RawTransaction(Base):
     raw_row_json = Column(Text, nullable=False)
     canonical_event_id = Column(Integer, ForeignKey("canonical_events.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"))
 
 
 Index("idx_raw_account_date", RawTransaction.account_id, RawTransaction.txn_date)
@@ -90,6 +92,7 @@ class CanonicalEvent(Base):
     is_user_edited = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"))
 
 
 Index("idx_canon_date", CanonicalEvent.event_date)
