@@ -64,6 +64,11 @@ def _startup():
     conn.commit()
     conn.close()
 
+    # Patch any rows with NULL user_id to user_id=1 (the first user)
+    for table in ["canonical_events", "uploads", "raw_transactions"]:
+        cur.execute(f"UPDATE {table} SET user_id=1 WHERE user_id IS NULL")
+    conn.commit()
+
 
 app.include_router(dashboard.router)
 app.include_router(uploads.router)
