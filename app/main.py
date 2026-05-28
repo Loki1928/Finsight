@@ -47,9 +47,22 @@ app.include_router(auth_routes.router)
 def _startup():
     """V1 simplified: create tables on startup instead of running Alembic.
     Also bootstrap default accounts (HDFC + Cash) so uploads and manual
-    entries have accounts to bind to."""
+    entries have accounts to bind to.
+    Inline migrations: add columns that may not exist in older DBs."""
     Base.metadata.create_all(bind=engine)
     ensure_default_accounts()
+    # Inline migration: add user_id to tables that predate P1.3
+    import sqlite3
+    from app.db.session import DB_PATH
+    conn = sqlite3.connect(str(DB_PATH))
+    cur = conn.cursor()
+    for table in ["canonical_events", "uploads", "raw_transactions"]:
+        try:
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER")
+        except sqlite3.OperationalError:
+            pass  # column already exists — safe to ignore
+    conn.commit()
+    conn.close()
 
 
 app.include_router(dashboard.router)
