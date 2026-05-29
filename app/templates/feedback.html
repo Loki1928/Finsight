@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 640px; margin: 2rem auto;">
+  <h1>Feedback</h1>
+
+  {% if submitted %}
+    <p style="padding: 0.75rem 1rem; background: #e8f5e9; border-radius: 6px;">
+      Thanks — your feedback was saved.
+    </p>
+  {% endif %}
+
+  <p>Found a bug or have a suggestion? Let me know.</p>
+
+  <form method="post" action="/feedback">
+    <textarea name="message" rows="6" required
+              style="width: 100%; padding: 0.5rem;"
+              placeholder="What's on your mind?"></textarea>
+    <button type="submit" style="margin-top: 0.75rem;">Submit</button>
+  </form>
+</div>
+{% endblock %}

@@ -7,10 +7,11 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.db.session import engine, Base
 from app.models import models  # noqa: F401 — ensures models register with Base
-from app.api import dashboard, uploads, transactions
+from app.api import dashboard, uploads, transactions, feedback
 from app.auth import routes as auth_routes
 from app.auth.dependencies import _RedirectToLogin
 from app.db.bootstrap import ensure_default_accounts
+
 
 app = FastAPI(title="Finsight", version="0.1.0")
 
@@ -72,6 +73,7 @@ def _startup():
 app.include_router(dashboard.router)
 app.include_router(uploads.router)
 app.include_router(transactions.router)
+app.include_router(feedback.router)
 
 
 @app.get("/health")
