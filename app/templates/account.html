@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 640px; margin: 0 auto; line-height: 1.6;">
+  <h1>Account</h1>
+
+  <p><strong>Name:</strong> {{ user.full_name }}</p>
+  <p><strong>Email:</strong> {{ user.email }}</p>
+
+  <hr style="margin: 2rem 0;">
+
+  <h2 style="color: #b91c1c;">Delete account</h2>
+  <p>This permanently deletes your account and <strong>all</strong> of your data:
+  transactions, uploaded statements, and feedback. This cannot be undone.</p>
+
+  {% if error %}
+  <p style="color: #b91c1c;">{{ error }}</p>
+  {% endif %}
+
+  <form method="post" action="/account/delete"
+        onsubmit="return confirm('This will permanently delete everything. Continue?');">
+    <p>Type <strong>DELETE</strong> to confirm:</p>
+    <input type="text" name="confirm_text" autocomplete="off"
+           style="padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+    <button type="submit"
+            style="margin-left: 0.5rem; padding: 0.4rem 1rem; background: #b91c1c;
+                   color: white; border: none; border-radius: 4px; cursor: pointer;">
+      Delete my account and all data
+    </button>
+  </form>
+</div>
+{% endblock %}
