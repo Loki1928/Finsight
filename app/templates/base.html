@@ -8,13 +8,14 @@
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
   <nav class="bg-white border-b border-slate-200">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-6">
+<div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-6">
       <a href="/" class="font-semibold text-lg">Finsight</a>
       <a href="/" class="text-sm text-slate-600 hover:text-slate-900">Dashboard</a>
       <a href="/transactions" class="text-sm text-slate-600 hover:text-slate-900">Transactions</a>
       <a href="/transactions/add" class="text-sm text-slate-600 hover:text-slate-900">Add transaction</a>
       <a href="/upload" class="text-sm text-slate-600 hover:text-slate-900">Upload</a>
-      <a href="/feedback">Feedback</a>
+      <a href="/feedback" class="text-sm text-slate-600 hover:text-slate-900">Feedback</a>
+      <a href="/privacy" class="text-sm text-slate-600 hover:text-slate-900">Privacy</a>
 
       {% if user %}
       <div class="ml-auto flex items-center gap-3">
@@ -23,6 +24,7 @@
              class="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200" />
         {% endif %}
         <span class="text-sm text-slate-700">{{ user.full_name or user.email }}</span>
+        <a href="/account" class="text-sm text-slate-500 hover:text-slate-900">Account</a>
         <a href="/auth/logout" class="text-sm text-slate-500 hover:text-red-600">Log out</a>
       </div>
       {% endif %}
