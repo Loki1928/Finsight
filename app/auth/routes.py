@@ -12,17 +12,20 @@ Public routes (no auth required): all three handlers in this file plus /health.
 Everything else is protected — see dependencies.py for the require_user check.
 """
 from datetime import datetime
+import os
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-import os
-
+from app.auth.allowlist import is_allowed
 from app.auth.oauth import oauth
 from app.auth.session import current_user_id, log_in, log_out
 from app.db.session import SessionLocal
 from app.models.models import User
+
+templates = Jinja2Templates(directory="app/templates")
 
 
 # OAUTH_REDIRECT_URI lets us pin the callback URL to a known-good value
@@ -116,6 +119,14 @@ async def callback(request: Request, db: Session = Depends(get_db)):
         # ever returns a malformed response, fail cleanly instead of writing
         # a half-broken User row.
         return RedirectResponse("/auth/login?error=missing_claims", status_code=302)
+
+    if not is_allowed(email):
+        # Not on the tester allowlist — clear any partial OAuth state and
+        # show the rejection page. No User row is created.
+        request.session.clear()
+        return templates.TemplateResponse(
+            "not_invited.html", {"request": request}, status_code=403
+        )
 
     user = db.query(User).filter(User.google_sub == google_sub).first()
     if user is None:
