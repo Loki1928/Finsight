@@ -49,25 +49,39 @@ def _startup():
     """V1 simplified: create tables on startup instead of running Alembic.
     Also bootstrap default accounts (HDFC + Cash) so uploads and manual
     entries have accounts to bind to.
-    Inline migrations: add columns that may not exist in older DBs."""
+
+    Inline idempotent migrations add columns that predate P1.3. Works on both
+    SQLite (local dev) and Postgres (Neon) by branching on the engine dialect.
+    """
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+
     Base.metadata.create_all(bind=engine)
     ensure_default_accounts()
-    # Inline migration: add user_id to tables that predate P1.3
-    import sqlite3
-    from app.db.session import DB_PATH
-    conn = sqlite3.connect(str(DB_PATH))
-    cur = conn.cursor()
-    for table in ["canonical_events", "uploads", "raw_transactions"]:
-        try:
-            cur.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER")
-        except sqlite3.OperationalError:
-            pass  # column already exists — safe to ignore
-   
 
-    # Patch any rows with NULL user_id to user_id=1 (the first user)
-    for table in ["canonical_events", "uploads", "raw_transactions"]:
-        cur.execute(f"UPDATE {table} SET user_id=1 WHERE user_id IS NULL")
-    conn.commit()
+    is_postgres = engine.dialect.name == "postgresql"
+    tables = ["canonical_events", "uploads", "raw_transactions"]
+
+    # Phase 1: ensure user_id column exists. Each ALTER runs in its own
+    # transaction so a caught "already exists" on SQLite can't poison the rest.
+    for table in tables:
+        try:
+            with engine.begin() as conn:
+                if is_postgres:
+                    conn.execute(text(
+                        f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS user_id INTEGER"
+                    ))
+                else:
+                    conn.execute(text(
+                        f"ALTER TABLE {table} ADD COLUMN user_id INTEGER"
+                    ))
+        except OperationalError:
+            pass  # SQLite: column already exists — safe to ignore
+
+    # Phase 2: patch any legacy rows with NULL user_id to the first user.
+    with engine.begin() as conn:
+        for table in tables:
+            conn.execute(text(f"UPDATE {table} SET user_id=1 WHERE user_id IS NULL"))
 
 
 app.include_router(dashboard.router)

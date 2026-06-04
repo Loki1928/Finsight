@@ -3,7 +3,7 @@ import os
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import require_user
@@ -55,10 +55,9 @@ def account_delete(
             if val:
                 file_paths.append(str(val))
 
-    # reconciliation_queue (if it exists) references raw_transactions — clear it first.
-    has_queue = db.execute(text(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='reconciliation_queue'"
-    )).first()
+  # reconciliation_queue (if it exists) references raw_transactions — clear it first.
+    # Use the dialect-agnostic inspector instead of sqlite_master (Postgres has no sqlite_master).
+    has_queue = inspect(db.get_bind()).has_table("reconciliation_queue")
     if has_queue:
         db.execute(text("""
             DELETE FROM reconciliation_queue
