@@ -1,4 +1,4 @@
-# Finsight
+<img width="853" height="382" alt="image" src="https://github.com/user-attachments/assets/b734e095-4d79-454b-86e0-09bcb53215fb" /># Finsight
 
 > Personal financial intelligence platform that ingests bank statements and reconciles transactions across sources into a single canonical ledger.
 
@@ -179,4 +179,4 @@ App is live on `http://localhost:8000`. The SQLite database is created automatic
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+Finsight is source-available, not open source. It is licensed under the PolyForm Noncommercial License 1.0.0. You're welcome to read, run, and learn from the code for any noncommercial purpose. Commercial use — including shipping it (or a derivative) as a product or service — is not permitted without a separate license. For commercial licensing, contact the author.
