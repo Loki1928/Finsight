@@ -1,5 +1,3 @@
-<img width="853" height="382" alt="image" src="https://github.com/user-attachments/assets/b734e095-4d79-454b-86e0-09bcb53215fb" /># Finsight
-
 > Personal financial intelligence platform that ingests bank statements and reconciles transactions across sources into a single canonical ledger.
 
 **Live demo:** [finsight-production-db99.up.railway.app](https://finsight-production-db99.up.railway.app/)
