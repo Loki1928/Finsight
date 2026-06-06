@@ -4,7 +4,7 @@ plus supporting tables (accounts, uploads, category_rules, audit_log).
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Float, Date, DateTime, Time,
-    ForeignKey, Text, Index,
+    ForeignKey, Text, Index, Boolean,
 )
 from app.db.session import Base
 
