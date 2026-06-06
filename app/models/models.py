@@ -22,7 +22,7 @@ class Account(Base):
     credit_limit = Column(Float)
     is_active = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
-    consent_given = Column(Boolean, default=False)
+    
 
 
 class Upload(Base):
@@ -134,7 +134,8 @@ class User(Base):
     picture_url = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, default=datetime.utcnow)
-
+    consent_given = Column(Boolean, default=False)
+    
 class Feedback(Base):
     __tablename__ = "feedback"
 
