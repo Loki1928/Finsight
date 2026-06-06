@@ -2,7 +2,7 @@
 
 > Reconciles transactions across bank statements, wallets, and credit cards into a single authoritative ledger.
 
-**Live demo:** [finsight.onrender.com](https://finsight.onrender.com) *(invite-only, currently in private testing)*
+**Live demo:** [finsight-al2x.onrender.com](https://finsight-al2x.onrender.com) *(invite-only, currently in private testing)*
 
 
 ---
