@@ -147,13 +147,33 @@ async def callback(request: Request, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(user)
-
     log_in(request, user.id)
+    if not user.consent_given:
+        return RedirectResponse("/auth/consent", status_code=302)
     return RedirectResponse("/", status_code=302)
-
 
 @router.get("/logout")
 async def logout(request: Request):
     """Clear the session and bounce to the login page."""
     log_out(request)
     return RedirectResponse("/auth/login", status_code=302)
+
+@router.get("/consent", response_class=HTMLResponse)
+async def consent_page(request: Request):
+    """Show the consent/ToS page to new users."""
+    if current_user_id(request) is None:
+        return RedirectResponse("/auth/login", status_code=302)
+    return templates.TemplateResponse("consent.html", {"request": request})
+
+
+@router.post("/consent")
+async def consent_submit(request: Request, db: Session = Depends(get_db)):
+    """User accepted ToS — mark consent_given and go to dashboard."""
+    uid = current_user_id(request)
+    if uid is None:
+        return RedirectResponse("/auth/login", status_code=302)
+    user = db.query(User).filter(User.id == uid).first()
+    if user:
+        user.consent_given = True
+        db.commit()
+    return RedirectResponse("/", status_code=302)

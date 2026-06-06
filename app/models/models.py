@@ -22,6 +22,7 @@ class Account(Base):
     credit_limit = Column(Float)
     is_active = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
+    consent_given = Column(Boolean, default=False)
 
 
 class Upload(Base):

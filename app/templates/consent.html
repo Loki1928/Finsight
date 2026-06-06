@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Before you continue — Finsight</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 max-w-md w-full">
+    <h1 class="text-2xl font-semibold text-gray-900 mb-1">Before you continue</h1>
+    <p class="text-sm text-gray-500 mb-6">Finsight is in private beta. Please read and accept before proceeding.</p>
+
+    <ul class="text-sm text-gray-700 space-y-3 mb-6">
+      <li>✅ Your financial data is stored securely and is only visible to you.</li>
+      <li>✅ It is never sold or shared with third parties.</li>
+      <li>✅ You can delete your account and all data at any time.</li>
+      <li>✅ This is a testing tool — verify numbers against your official bank records.</li>
+    </ul>
+
+    <p class="text-xs text-gray-500 mb-6">
+      By continuing you agree to our
+      <a href="/terms" target="_blank" class="underline">Terms of Use</a> and
+      <a href="/privacy" target="_blank" class="underline">Privacy Policy</a>.
+    </p>
+
+    <form method="post" action="/auth/consent">
+      <button type="submit"
+              class="w-full px-4 py-2.5 bg-gray-900 text-white text-sm font-medium
+                     rounded-md hover:bg-gray-700 transition">
+        I understand — continue to Finsight
+      </button>
+    </form>
+  </div>
+</body>
+</html>

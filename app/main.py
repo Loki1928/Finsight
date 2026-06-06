@@ -83,12 +83,42 @@ def _startup():
         for table in tables:
             conn.execute(text(f"UPDATE {table} SET user_id=1 WHERE user_id IS NULL"))
 
+    # Phase 3: ensure consent_given column exists on users table.
+    try:
+        with engine.begin() as conn:
+            if is_postgres:
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_given BOOLEAN DEFAULT FALSE"
+                ))
+            else:
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT 0"
+                ))
+    except OperationalError:
+        pass  # SQLite: column already exists
+
 
 app.include_router(dashboard.router)
 app.include_router(uploads.router)
 app.include_router(transactions.router)
 app.include_router(feedback.router)
 app.include_router(account.router)
+
+
+@app.get("/terms")
+async def terms(request: Request):
+    from fastapi.responses import HTMLResponse
+    from fastapi.templating import Jinja2Templates
+    t = Jinja2Templates(directory="app/templates")
+    return t.TemplateResponse("terms.html", {"request": request})
+
+
+@app.get("/privacy")
+async def privacy_page(request: Request):
+    from fastapi.responses import HTMLResponse
+    from fastapi.templating import Jinja2Templates
+    t = Jinja2Templates(directory="app/templates")
+    return t.TemplateResponse("privacy.html", {"request": request})
 
 
 @app.get("/health")
