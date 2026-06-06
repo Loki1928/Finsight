@@ -4,7 +4,6 @@
 
 **Live demo:** [finsight.onrender.com](https://finsight.onrender.com) *(invite-only, currently in private testing)*
 
-![CI](https://github.com/Loki1928/Finsight/actions/workflows/backend.yml/badge.svg)
 
 ---
 
