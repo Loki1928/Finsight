@@ -50,7 +50,10 @@ async def upload_submit(
     contents = await file.read()
     file_hash = hashlib.sha256(contents).hexdigest()
 
-    existing = db.query(Upload).filter(Upload.file_hash == file_hash).first()
+    existing = db.query(Upload).filter(
+    Upload.file_hash == file_hash,
+    Upload.user_id == user.id,
+    ).first()
     if existing:
         return templates.TemplateResponse(
             "upload.html",

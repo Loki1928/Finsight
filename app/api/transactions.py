@@ -39,14 +39,11 @@ def _normalize_user_category(raw: str) -> str:
     return _CATEGORY_LOOKUP.get(cleaned.lower(), cleaned.title())
 
 
-def _get_user_editable_event(db: Session, event_id: int) -> CanonicalEvent:
-    """Fetch a canonical event by id, but ONLY if it's user-editable.
-
-    Parsed events (is_user_edited=0) cannot be edited or deleted via this UI —
-    that's a separate feature with different rules (would orphan raw_transactions
-    rows). The progress file defers parsed-row editing to a later phase.
-    """
-    event = db.query(CanonicalEvent).filter(CanonicalEvent.id == event_id).first()
+def _get_user_editable_event(db: Session, event_id: int, user_id: int) -> CanonicalEvent:
+    event = db.query(CanonicalEvent).filter(
+        CanonicalEvent.id == event_id,
+        CanonicalEvent.user_id == user_id,
+    ).first()
     if event is None:
         raise HTTPException(status_code=404, detail="Transaction not found")
     if not event.is_user_edited:
@@ -81,9 +78,10 @@ def transactions(request: Request, db: Session = Depends(get_db), user: User = D
     # if the parser captured them in error_log warnings (it would only do this on
     # mismatch). When no warnings, we just show "matches".
     latest_upload = (
-        db.query(Upload)
-        .order_by(Upload.uploaded_at.desc())
-        .first()
+    db.query(Upload)
+    .filter(Upload.user_id == user.id)
+    .order_by(Upload.uploaded_at.desc())
+    .first()
     )
     summary = {
         "total_count": total_count,
@@ -181,7 +179,7 @@ def transactions_add_submit(
 @router.get("/transactions/{event_id}/edit", response_class=HTMLResponse)
 def transactions_edit_form(event_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):
     """Render the edit form for a user-entered transaction."""
-    event = _get_user_editable_event(db, event_id)
+    event = _get_user_editable_event(db, event_id, user.id)
     accounts = (
         db.query(Account)
         .filter(Account.is_active == 1)
@@ -244,13 +242,8 @@ def transactions_edit_submit(
 
 
 @router.post("/transactions/{event_id}/delete")
-def transactions_delete(event_id: int, db: Session = Depends(get_db)):
-    """Permanently delete a user-entered CanonicalEvent.
-
-    Parsed events are protected by _get_user_editable_event — attempting to
-    delete one returns 403 rather than silently removing parser-sourced data.
-    """
-    event = _get_user_editable_event(db, event_id)
+def transactions_delete(event_id: int, db: Session = Depends(get_db), user: User = Depends(require_user)):
+    event = _get_user_editable_event(db, event_id, user.id)
     db.delete(event)
     db.commit()
     return RedirectResponse(url="/transactions", status_code=303)
