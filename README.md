@@ -16,3 +16,47 @@
 ---
 
 ## Architecture
+
+User uploads PDF/Excel
+│
+▼
+Raw transaction layer  (immutable; one row per source row)
+│
+▼
+Reconciliation engine  (Level 1: exact ID → Level 2: narration route → Level 3: contextual score)
+│
+▼
+Canonical events layer  (deduplicated, authoritative; all analytics read from here)
+│
+▼
+Dashboard / Analytics
+
+---
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Backend | FastAPI (Python 3.11) |
+| Frontend | Jinja2 templates + Tailwind CSS |
+| Database | Neon Postgres (Postgres 18, AWS ap-southeast-1) |
+| Auth | Google OAuth 2.0 (invite-only allowlist) |
+| Hosting | Render (Docker) |
+| PDF parsing | pdfplumber + pikepdf (password-protected PDFs) |
+| Reconciliation | rapidfuzz (fuzzy merchant matching) |
+
+---
+
+## Status
+
+Private beta — invite-only testing with a small group. Not open for public signups yet.
+
+**V1 complete:** HDFC parser · Paytm parser · 3-level reconciliation · Dashboard · Credit card intelligence · User auth + delete-account (DPDP erasure right)
+
+**V2 planned:** AI copilot · Goal tracker · Manual investments / net worth · Recurring detection · Budget engine · Additional bank parsers
+
+---
+
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE) — source-available for noncommercial use. Copyright 2026 Lokendra Sharma.
