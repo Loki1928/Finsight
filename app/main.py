@@ -31,7 +31,7 @@ app.add_middleware(
     session_cookie="finsight_session",
     max_age=60 * 60 * 24 * 30,   # 30 days
     same_site="lax",              # required so the OAuth callback brings the cookie back
-    https_only=False,             # flipped to True once we're on Railway-only with TLS
+    https_only=True,              # Render provides TLS
 )
 
 
