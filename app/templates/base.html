@@ -6,33 +6,41 @@
   <title>{% block title %}Finsight{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
   <nav class="bg-white border-b border-slate-200">
-<div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-6">
-      <a href="/" class="font-semibold text-lg">Finsight</a>
-      <a href="/" class="text-sm text-slate-600 hover:text-slate-900">Dashboard</a>
-      <a href="/transactions" class="text-sm text-slate-600 hover:text-slate-900">Transactions</a>
-      <a href="/transactions/add" class="text-sm text-slate-600 hover:text-slate-900">Add transaction</a>
-      <a href="/upload" class="text-sm text-slate-600 hover:text-slate-900">Upload</a>
-      <a href="/feedback" class="text-sm text-slate-600 hover:text-slate-900">Feedback</a>
-      <a href="/privacy" class="text-sm text-slate-600 hover:text-slate-900">Privacy</a>
-      <a href="/terms" class="text-sm text-slate-600 hover:text-slate-900">Terms</a>
-
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-5">
+      <a href="/" class="font-semibold text-lg tracking-tight">Finsight</a>
+      <div class="flex gap-4 text-sm">
+        <a href="/" class="{% if request.url.path == '/' %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Dashboard</a>
+        <a href="/transactions" class="{% if '/transactions' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Transactions</a>
+        <a href="/categories" class="{% if '/categories' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Categories</a>
+        <a href="/upload" class="{% if '/upload' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Upload</a>
+        <a href="/feedback" class="{% if '/feedback' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Feedback</a>
+      </div>
       {% if user %}
       <div class="ml-auto flex items-center gap-3">
         {% if user.picture_url %}
-        <img src="{{ user.picture_url }}" alt="avatar"
+        <img src="{{ user.picture_url }}" alt=""
              class="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200" />
         {% endif %}
-        <span class="text-sm text-slate-700">{{ user.full_name or user.email }}</span>
+        <span class="text-sm text-slate-700 hidden md:inline">{{ user.full_name or user.email }}</span>
         <a href="/account" class="text-sm text-slate-500 hover:text-slate-900">Account</a>
         <a href="/auth/logout" class="text-sm text-slate-500 hover:text-red-600">Log out</a>
       </div>
       {% endif %}
     </div>
   </nav>
-  <main class="max-w-5xl mx-auto px-4 py-8">
+  <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
     {% block content %}{% endblock %}
   </main>
+  <footer class="border-t border-slate-200 bg-white mt-auto">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between text-xs text-slate-400">
+      <span>Finsight — your finances, your data</span>
+      <div class="flex gap-4">
+        <a href="/privacy" class="hover:text-slate-600">Privacy</a>
+        <a href="/terms" class="hover:text-slate-600">Terms</a>
+      </div>
+    </div>
+  </footer>
 </body>
 </html>

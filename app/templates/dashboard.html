@@ -1,75 +1,204 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Finsight{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-  <div class="bg-white rounded-lg border border-slate-200 p-6">
-    <div class="text-sm text-slate-500">Total spend</div>
-    <div class="text-3xl font-semibold mt-1 text-red-600">₹{{ "%.2f"|format(total_spend or 0) }}</div>
-    <div class="text-xs text-slate-400 mt-2">Debits, excluding internal transfers and credit-card bill payments.</div>
+<!-- Period selector -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
+  <h1 class="text-2xl font-semibold">Dashboard</h1>
+  <div class="flex flex-wrap gap-1 bg-white rounded-lg border border-slate-200 p-1">
+    {% for val, label in [("this_month", "This month"), ("last_month", "Last month"), ("last_3", "3 months"), ("all", "All time")] %}
+    <a href="/?period={{ val }}"
+       class="px-3 py-1.5 text-sm rounded-md transition-colors
+              {% if period == val and not custom_active %}bg-slate-900 text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+    <button onclick="document.getElementById('custom-range').classList.toggle('hidden')"
+            class="px-3 py-1.5 text-sm rounded-md transition-colors
+                   {% if custom_active %}bg-slate-900 text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+      Custom
+    </button>
   </div>
-  <div class="bg-white rounded-lg border border-slate-200 p-6">
-    <div class="text-sm text-slate-500">Total income</div>
-    <div class="text-3xl font-semibold mt-1 text-green-600">₹{{ "%.2f"|format(total_income or 0) }}</div>
-    <div class="text-xs text-slate-400 mt-2">Credits, excluding internal transfers.</div>
+</div>
+<!-- Custom date range (hidden by default, shown when Custom is clicked or active) -->
+<form method="GET" action="/"
+      id="custom-range"
+      class="{% if not custom_active %}hidden{% endif %} bg-white rounded-lg border border-slate-200 p-4 mb-4 flex items-end gap-3">
+  <input type="hidden" name="period" value="custom" />
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">From</label>
+    <input type="date" name="date_from" value="{{ date_from or '' }}"
+           class="text-sm border border-slate-300 rounded-md px-3 py-1.5" required />
+  </div>
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">To</label>
+    <input type="date" name="date_to" value="{{ date_to or '' }}"
+           class="text-sm border border-slate-300 rounded-md px-3 py-1.5" required />
+  </div>
+  <button type="submit"
+          class="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-slate-800">
+    Apply
+  </button>
+  {% if custom_active %}
+  <a href="/" class="text-sm text-slate-500 hover:text-slate-900 px-2 py-2">Clear</a>
+  {% endif %}
+</form>
+
+<!-- KPI cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-lg border border-slate-200 p-5">
+    <div class="text-xs text-slate-500 uppercase tracking-wide">Total spend</div>
+    <div class="text-2xl font-semibold mt-1 text-red-600">₹{{ "{:,.0f}".format(total_spend) }}</div>
+  </div>
+  <div class="bg-white rounded-lg border border-slate-200 p-5">
+    <div class="text-xs text-slate-500 uppercase tracking-wide">Total income</div>
+    <div class="text-2xl font-semibold mt-1 text-green-600">₹{{ "{:,.0f}".format(total_income) }}</div>
+  </div>
+  <div class="bg-white rounded-lg border border-slate-200 p-5">
+    <div class="text-xs text-slate-500 uppercase tracking-wide">Savings</div>
+    <div class="text-2xl font-semibold mt-1 {% if savings >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+      {% if savings >= 0 %}+{% endif %}₹{{ "{:,.0f}".format(savings) }}
+    </div>
+  </div>
+  <div class="bg-white rounded-lg border border-slate-200 p-5">
+    <div class="text-xs text-slate-500 uppercase tracking-wide">Transactions</div>
+    <div class="text-2xl font-semibold mt-1">{{ txn_count }}</div>
   </div>
 </div>
 
-<div class="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-  <h2 class="text-lg font-medium mb-4">Spend by category</h2>
-  {% if by_category %}
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="text-left text-slate-500 border-b border-slate-200">
-          <th class="py-2">Category</th>
-          <th class="py-2 text-right">Count</th>
-          <th class="py-2 text-right">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in by_category %}
-        <tr class="border-b border-slate-100">
-          <td class="py-2">{{ row.category or "Uncategorized" }}</td>
-          <td class="py-2 text-right">{{ row.count }}</td>
-          <td class="py-2 text-right">₹{{ "%.2f"|format(row.total) }}</td>
-        </tr>
+<!-- Charts row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+  <!-- Spend by category donut -->
+  <div class="bg-white rounded-lg border border-slate-200 p-6">
+    <h2 class="text-lg font-medium mb-4">Spend by category</h2>
+    {% if category_data %}
+    <div class="flex items-start gap-6">
+      <div class="w-48 h-48 flex-shrink-0">
+        <canvas id="categoryChart" width="192" height="192"></canvas>
+      </div>
+      <div class="flex-1 text-sm space-y-1.5 max-h-48 overflow-y-auto">
+        {% for c in category_data %}
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" id="dot-{{ loop.index0 }}"></span>
+            <span class="text-slate-700">{{ c.category }}</span>
+          </div>
+          <span class="text-slate-500 font-mono text-xs">₹{{ "{:,.0f}".format(c.total) }}</span>
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
+      </div>
+    </div>
+    {% else %}
     <p class="text-slate-500 text-sm">
       No spending recorded yet.
       <a href="/upload" class="text-blue-600 hover:underline">Upload a statement</a>
-      <span class="text-slate-400 mx-1">or</span>
-      <a href="/transactions/add" class="text-blue-600 hover:underline">add one manually</a>.
+      or <a href="/transactions/add" class="text-blue-600 hover:underline">add one manually</a>.
     </p>
-  {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Top merchants -->
+  <div class="bg-white rounded-lg border border-slate-200 p-6">
+    <h2 class="text-lg font-medium mb-4">Top merchants</h2>
+    {% if top_merchants %}
+    <div class="space-y-3">
+      {% for m in top_merchants %}
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-700">{{ m.merchant_normalized }}</span>
+          <span class="text-slate-500 font-mono text-xs">₹{{ "{:,.0f}".format(m.total) }} <span class="text-slate-400">({{ m.count }})</span></span>
+        </div>
+        {% set bar_pct = (m.total / top_merchants[0].total * 100) if top_merchants[0].total > 0 else 0 %}
+        <div class="w-full bg-slate-100 rounded-full h-1.5">
+          <div class="bg-slate-400 h-1.5 rounded-full" style="width: {{ bar_pct|round(1) }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-slate-500 text-sm">No merchant data yet.</p>
+    {% endif %}
+  </div>
 </div>
 
+<!-- Income by category -->
 <div class="bg-white rounded-lg border border-slate-200 p-6">
   <h2 class="text-lg font-medium mb-4">Income by category</h2>
   {% if income_by_category %}
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="text-left text-slate-500 border-b border-slate-200">
-          <th class="py-2">Category</th>
-          <th class="py-2 text-right">Count</th>
-          <th class="py-2 text-right">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in income_by_category %}
-        <tr class="border-b border-slate-100">
-          <td class="py-2">{{ row.category or "Uncategorized" }}</td>
-          <td class="py-2 text-right">{{ row.count }}</td>
-          <td class="py-2 text-right">₹{{ "%.2f"|format(row.total) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-slate-500 border-b border-slate-200">
+        <th class="py-2">Category</th>
+        <th class="py-2 text-right">Count</th>
+        <th class="py-2 text-right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in income_by_category %}
+      <tr class="border-b border-slate-100">
+        <td class="py-2">{{ row.category or "Uncategorized" }}</td>
+        <td class="py-2 text-right">{{ row.count }}</td>
+        <td class="py-2 text-right">₹{{ "{:,.2f}".format(row.total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
   {% else %}
-    <p class="text-slate-500 text-sm">No income recorded yet.</p>
+  <p class="text-slate-500 text-sm">No income recorded yet.</p>
   {% endif %}
 </div>
+
+{% if category_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const COLORS = [
+  '#ef4444','#f97316','#eab308','#22c55e','#14b8a6',
+  '#3b82f6','#6366f1','#a855f7','#ec4899','#78716c',
+  '#64748b','#0ea5e9','#d946ef','#f43f5e','#84cc16',
+  '#06b6d4','#8b5cf6','#fb923c','#a3e635','#2dd4bf',
+];
+const labels = [{% for c in category_data %}"{{ c.category }}",{% endfor %}];
+const data = [{% for c in category_data %}{{ c.total }},{% endfor %}];
+const colors = labels.map((_, i) => COLORS[i % COLORS.length]);
+
+// Set legend dot colors
+labels.forEach((_, i) => {
+  const dot = document.getElementById('dot-' + i);
+  if (dot) dot.style.backgroundColor = colors[i];
+});
+
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: labels,
+    datasets: [{
+      data: data,
+      backgroundColor: colors,
+      borderWidth: 1,
+      borderColor: '#fff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    cutout: '60%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const val = ctx.parsed;
+            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+            const pct = ((val / total) * 100).toFixed(1);
+            return `₹${val.toLocaleString('en-IN')} (${pct}%)`;
+          }
+        }
+      }
+    }
+  }
+});
+</script>
+{% endif %}
+
 {% endblock %}

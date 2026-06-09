@@ -1,15 +1,72 @@
 {% extends "base.html" %}
 {% block title %}Transactions — Finsight{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-2">Transactions</h1>
-{% if summary.filename %}
-<p class="text-sm text-slate-500 mb-6">Source: <span class="font-mono text-xs">{{ summary.filename }}</span></p>
-{% endif %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold">Transactions</h1>
+  <a href="/transactions/add"
+     class="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-slate-800">
+    + Add manual
+  </a>
+</div>
 
+<!-- Search & filters -->
+<form method="GET" action="/transactions"
+      class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Search</label>
+      <input type="text" name="q" value="{{ filters.q }}"
+             placeholder="Merchant or note..."
+             class="w-full text-sm border border-slate-300 rounded-md px-3 py-1.5" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Category</label>
+      <select name="category" class="w-full text-sm border border-slate-300 rounded-md px-3 py-1.5">
+        <option value="">All categories</option>
+        <option value="uncategorized" {% if filters.category|lower == 'uncategorized' %}selected{% endif %}>Uncategorized</option>
+        {% for cat in category_list %}
+        <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Type</label>
+      <select name="direction" class="w-full text-sm border border-slate-300 rounded-md px-3 py-1.5">
+        <option value="">All</option>
+        <option value="debit" {% if filters.direction == 'debit' %}selected{% endif %}>Debits</option>
+        <option value="credit" {% if filters.direction == 'credit' %}selected{% endif %}>Credits</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">From</label>
+      <input type="date" name="date_from" value="{{ filters.date_from }}"
+             class="w-full text-sm border border-slate-300 rounded-md px-3 py-1.5" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">To</label>
+      <input type="date" name="date_to" value="{{ filters.date_to }}"
+             class="w-full text-sm border border-slate-300 rounded-md px-3 py-1.5" />
+    </div>
+  </div>
+  <div class="flex gap-2 mt-3">
+    <button type="submit"
+            class="bg-slate-900 text-white text-xs font-medium px-4 py-1.5 rounded-md hover:bg-slate-800">
+      Filter
+    </button>
+    {% if filters.q or filters.category or filters.direction or filters.date_from or filters.date_to %}
+    <a href="/transactions"
+       class="text-xs text-slate-500 hover:text-slate-900 px-3 py-1.5">
+      Clear filters
+    </a>
+    {% endif %}
+  </div>
+</form>
+
+<!-- Summary stats -->
 {% if summary.total_count > 0 %}
-<div class="bg-white rounded-lg border border-slate-200 p-4 mb-6 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+<div class="bg-white rounded-lg border border-slate-200 p-4 mb-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
   <div>
-    <div class="text-slate-500 text-xs uppercase tracking-wide">Total rows</div>
+    <div class="text-slate-500 text-xs uppercase tracking-wide">Showing</div>
     <div class="text-xl font-semibold mt-1">{{ summary.total_count }}</div>
     {% if summary.manual_count and summary.manual_count > 0 %}
       <div class="text-xs text-slate-500 mt-0.5">{{ summary.manual_count }} manual</div>
@@ -32,59 +89,72 @@
     </div>
   </div>
   <div>
-    <div class="text-slate-500 text-xs uppercase tracking-wide">Parser status</div>
+    <div class="text-slate-500 text-xs uppercase tracking-wide">Parser</div>
     <div class="text-xl font-semibold mt-1 {% if summary.upload_status == 'success' %}text-green-600{% else %}text-amber-600{% endif %}">
       {{ summary.upload_status or '—' }}
     </div>
-    {% if summary.upload_warnings %}
-      <div class="text-xs text-amber-700 mt-0.5">Has warnings</div>
-    {% else %}
-      <div class="text-xs text-slate-500 mt-0.5">Totals match summary</div>
-    {% endif %}
   </div>
 </div>
-{% if summary.upload_warnings %}
-<div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-md px-4 py-3 mb-6 text-sm">
-  <div class="font-medium mb-1">Parser warnings:</div>
-  <pre class="text-xs whitespace-pre-wrap">{{ summary.upload_warnings }}</pre>
-</div>
-{% endif %}
 {% endif %}
 
+<!-- Transaction table -->
 {% if rows %}
 <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
   <table class="w-full text-sm">
     <thead class="bg-slate-50">
       <tr class="text-left text-slate-500 border-b border-slate-200">
-        <th class="px-4 py-2 w-12 text-right">#</th>
         <th class="px-4 py-2">Date</th>
         <th class="px-4 py-2">Merchant</th>
         <th class="px-4 py-2">Category</th>
         <th class="px-4 py-2 text-right">Amount</th>
-        <th class="px-4 py-2 text-right w-32">Actions</th>
+        <th class="px-4 py-2 text-right w-28">Actions</th>
       </tr>
     </thead>
     <tbody>
       {% for r in rows %}
-      <tr class="border-b border-slate-100">
-        <td class="px-4 py-2 text-right text-slate-400 font-mono">{{ loop.index }}</td>
-        <td class="px-4 py-2 whitespace-nowrap">{{ r.event_date }}</td>
+      <tr class="border-b border-slate-100 hover:bg-slate-50" id="row-{{ r.id }}">
+        <td class="px-4 py-2 whitespace-nowrap text-slate-600">{{ r.event_date.strftime('%d %b %Y') }}</td>
         <td class="px-4 py-2">
-          {{ r.merchant_normalized or r.merchant_raw or "—" }}
+          <span class="text-slate-900"
+                {% if r.merchant_raw and r.merchant_raw != r.merchant_normalized %}
+                title="Raw: {{ r.merchant_raw[:100] }}"
+                {% endif %}>
+            {{ r.merchant_normalized or r.merchant_raw or "—" }}
+          </span>
           {% if r.is_user_edited %}
-            <span class="ml-2 inline-block text-[10px] uppercase tracking-wide font-semibold bg-slate-100 text-slate-600 border border-slate-200 rounded px-1.5 py-0.5 align-middle"
-                  title="Added or edited manually">manual</span>
+            <span class="ml-1.5 inline-block text-[10px] uppercase tracking-wide font-semibold bg-slate-100 text-slate-500 border border-slate-200 rounded px-1.5 py-0.5 align-middle">manual</span>
           {% endif %}
         </td>
-        <td class="px-4 py-2">{{ r.category or "—" }}</td>
-        <td class="px-4 py-2 text-right whitespace-nowrap {% if r.direction == 'debit' %}text-red-600{% else %}text-green-600{% endif %}">
+        <td class="px-4 py-2" id="cat-cell-{{ r.id }}">
+          <!-- Category display (click to edit) -->
+          <span class="cat-display cursor-pointer hover:bg-slate-100 px-2 py-0.5 rounded text-slate-700"
+                onclick="showCatEdit({{ r.id }})"
+                title="Click to change category">
+            {{ r.category or "Uncategorized" }}
+            <svg class="inline w-3 h-3 ml-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+            </svg>
+          </span>
+          <!-- Category edit form (hidden by default) -->
+          <form method="POST" action="/transactions/{{ r.id }}/recategorize"
+                class="cat-edit hidden flex gap-1 items-center" id="cat-form-{{ r.id }}">
+            <input type="text" name="category" value="{{ r.category or '' }}"
+                   list="cat-suggestions"
+                   class="text-xs border border-slate-300 rounded px-2 py-1 w-32"
+                   placeholder="Category..." />
+            <button type="submit" class="text-xs bg-slate-900 text-white rounded px-2 py-1">Save</button>
+            <button type="button" class="text-xs text-slate-500 px-1" onclick="hideCatEdit({{ r.id }})">✕</button>
+          </form>
+        </td>
+        <td class="px-4 py-2 text-right whitespace-nowrap font-mono
+                   {% if r.direction == 'debit' %}text-red-600{% else %}text-green-600{% endif %}">
           {% if r.direction == 'debit' %}-{% else %}+{% endif %}₹{{ "{:,.2f}".format(r.amount) }}
         </td>
         <td class="px-4 py-2 text-right whitespace-nowrap text-xs">
           {% if r.is_user_edited %}
             <a href="/transactions/{{ r.id }}/edit" class="text-blue-600 hover:underline">Edit</a>
             <form method="POST" action="/transactions/{{ r.id }}/delete" class="inline ml-2"
-                  onsubmit="return confirm('Delete this transaction? This cannot be undone.');">
+                  onsubmit="return confirm('Delete this transaction?');">
               <button type="submit" class="text-red-600 hover:underline">Delete</button>
             </form>
           {% else %}
@@ -96,14 +166,41 @@
     </tbody>
   </table>
 </div>
+
+<!-- Category suggestions datalist -->
+<datalist id="cat-suggestions">
+  {% for s in category_suggestions %}
+  <option value="{{ s }}">
+  {% endfor %}
+</datalist>
+
+<script>
+function showCatEdit(id) {
+  const cell = document.getElementById('cat-cell-' + id);
+  cell.querySelector('.cat-display').classList.add('hidden');
+  cell.querySelector('.cat-edit').classList.remove('hidden');
+  cell.querySelector('input[name="category"]').focus();
+}
+function hideCatEdit(id) {
+  const cell = document.getElementById('cat-cell-' + id);
+  cell.querySelector('.cat-display').classList.remove('hidden');
+  cell.querySelector('.cat-edit').classList.add('hidden');
+}
+</script>
+
 {% else %}
 <div class="bg-white rounded-lg border border-slate-200 p-8 text-center">
+  {% if filters.q or filters.category or filters.direction or filters.date_from or filters.date_to %}
+  <p class="text-slate-500">No transactions match your filters.</p>
+  <a href="/transactions" class="text-sm text-blue-600 hover:underline mt-2 inline-block">Clear filters</a>
+  {% else %}
   <p class="text-slate-500">No transactions yet.</p>
   <p class="mt-3 text-sm">
     <a href="/upload" class="text-blue-600 hover:underline">Upload a statement</a>
     <span class="text-slate-400 mx-2">or</span>
     <a href="/transactions/add" class="text-blue-600 hover:underline">add one manually</a>
   </p>
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}
