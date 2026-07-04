@@ -1,11 +1,14 @@
 """
-Merchant normalizer + category mapper for Finsight V1.
+Merchant normalizer + category mapper for Finsight.
+
+Session 19 rewrite — ~100 patterns covering common Indian merchants,
+utilities, recharges, insurance, medical, government, subscriptions.
 
 Resolution order (first hit wins):
   1. Named-merchant regex table.
   2. Masked-counterparty UPI rule (UPI-XXXXX####-).
   3. UPI handle pattern -> person name + "P2P Transfer".
-  4. UPI no-handle truncated pattern -> person name + "P2P Transfer".
+  4. UPI person-to-person (truncated, no handle).
   5. NEFT / RTGS sender -> "Transfer".
   6. Cleaned-and-titlecased fallback -> "Uncategorized".
 """
@@ -13,54 +16,179 @@ import re
 
 # (regex, canonical_merchant, category)
 MERCHANT_PATTERNS: list[tuple[str, str, str]] = [
-    # --- Food / quick-commerce ---
+    # ── Food / delivery ──────────────────────────────────────────────
     (r"swiggyinstamart",                      "Swiggy Instamart",            "Groceries"),
     (r"swiggy",                               "Swiggy",                      "Food"),
     (r"zomato",                               "Zomato",                      "Food"),
+    (r"dominos|domino",                       "Domino's",                    "Food"),
+    (r"mcdonalds|mcdonald",                   "McDonald's",                  "Food"),
+    (r"starbucks",                            "Starbucks",                   "Food"),
+    (r"kfc\b",                                "KFC",                         "Food"),
+    (r"pizzahut|pizza\s*hut",                 "Pizza Hut",                   "Food"),
+    (r"burgerking|burger\s*king",             "Burger King",                 "Food"),
+    (r"haldirams|haldiram",                   "Haldiram's",                  "Food"),
+    (r"cafe\s*coffee\s*day|ccd\b",            "Cafe Coffee Day",             "Food"),
+    (r"chaayos",                              "Chaayos",                     "Food"),
+
+    # ── Groceries / quick-commerce ───────────────────────────────────
     (r"zepto",                                "Zepto",                       "Groceries"),
     (r"blinkit|grofers",                      "Blinkit",                     "Groceries"),
     (r"bigbasket",                            "BigBasket",                   "Groceries"),
     (r"dmart|d[-\s]?mart|avenue\s*super",     "DMart",                       "Groceries"),
-    # --- E-commerce ---
-    (r"amazon\s*pay|amzn",                    "Amazon Pay",                  "Shopping"),
-    (r"amazon",                               "Amazon",                      "Shopping"),
+    (r"jiomart",                              "JioMart",                     "Groceries"),
+    (r"reliance\s*fresh|reliancefresh",       "Reliance Fresh",              "Groceries"),
+    (r"more\s*supermarket|morestore",         "More Supermarket",            "Groceries"),
+    (r"spencers|spencer",                     "Spencer's",                   "Groceries"),
+
+    # ── E-commerce / shopping ────────────────────────────────────────
+    (r"amazon\s*pay|amzn\s*pay",              "Amazon Pay",                  "Shopping"),
+    (r"amazon|amzn",                          "Amazon",                      "Shopping"),
     (r"flipkart|fkrt",                        "Flipkart",                    "Shopping"),
     (r"myntra",                               "Myntra",                      "Shopping"),
-    # --- Travel ---
-    (r"indigoairline|indigo\s*air|\bindigo\b","IndiGo",                      "Travel"),
+    (r"ajio\b",                               "AJIO",                        "Shopping"),
+    (r"nykaa",                                "Nykaa",                       "Shopping"),
+    (r"meesho",                               "Meesho",                      "Shopping"),
+    (r"croma\b",                              "Croma",                       "Shopping"),
+    (r"reliancedigital|reliance\s*digital",   "Reliance Digital",            "Shopping"),
+
+    # ── Mobile recharge / telecom ────────────────────────────────────
+    (r"jiodigital|jiorecharge|jio\s*recharge|jio\s*prepaid|jio\s*postpaid|reliance\s*jio",
+                                              "Jio Recharge",                "Utilities"),
+    (r"airtelrecharge|airtel\s*recharge|bharti\s*airtel|airtel\s*prepaid|airtel\s*postpaid|\bairtel\b",
+                                              "Airtel Recharge",             "Utilities"),
+    (r"vi\s*recharge|vodafone|idea\s*recharge|vodafoneidea|\bvi\b.*recharge",
+                                              "Vi Recharge",                 "Utilities"),
+    (r"bsnl\s*recharge|bsnl\b",               "BSNL Recharge",               "Utilities"),
+    (r"act\s*fibernet|actfibernet",           "ACT Fibernet",                "Utilities"),
+    (r"jiofiber|jio\s*fiber",                 "Jio Fiber",                   "Utilities"),
+    (r"airtel\s*broadband|airtel\s*xstream",  "Airtel Broadband",            "Utilities"),
+
+    # ── Electricity / water / gas ────────────────────────────────────
+    (r"electricity|bijli|discom|avvnl|jdvvnl|jvvnl|jodhpur\s*vidyut|jaipur\s*vidyut",
+                                              "Electricity Bill",            "Utilities"),
+    (r"rajasthan\s*rajya\s*vidyut",           "Rajasthan Electricity",       "Utilities"),
+    (r"tata\s*power|tatapower",               "Tata Power",                  "Utilities"),
+    (r"adani\s*electricity",                  "Adani Electricity",           "Utilities"),
+    (r"bses\b",                               "BSES",                        "Utilities"),
+    (r"mahanagar\s*gas|mgl\b",                "Mahanagar Gas",               "Utilities"),
+    (r"indraprastha\s*gas|igl\b",             "IGL Gas",                     "Utilities"),
+    (r"water\s*bill|jal\s*board|phed\b",      "Water Bill",                  "Utilities"),
+
+    # ── Travel ───────────────────────────────────────────────────────
+    (r"indigoairline|indigo\s*air|\bindigo\b.*air", "IndiGo",                "Travel"),
     (r"\birctc\b",                            "IRCTC",                       "Travel"),
     (r"uber\s*india|\buber\b",                "Uber",                        "Travel"),
     (r"\bolacabs\b|\bola\s*cabs\b",           "Ola",                         "Travel"),
     (r"makemytrip|\bmmt\b",                   "MakeMyTrip",                  "Travel"),
-    # --- Entertainment / subscriptions ---
-    (r"netflix",                              "Netflix",                     "Entertainment"),
-    (r"hotstar|disney\s*\+\s*hotstar",        "Hotstar",                     "Entertainment"),
-    (r"spotify",                              "Spotify",                     "Entertainment"),
-    (r"quick\s*tv|paytm-?83855917",           "QuickTV",                     "Entertainment"),
-    # --- Wallet add-money (specific first, then truncated fallback) ---
+    (r"rapido\b",                             "Rapido",                      "Travel"),
+    (r"goibibo",                              "Goibibo",                     "Travel"),
+    (r"easemytrip",                           "EaseMyTrip",                  "Travel"),
+    (r"redbus|red\s*bus",                     "RedBus",                      "Travel"),
+    (r"cleartrip",                            "Cleartrip",                   "Travel"),
+    (r"yatra\b",                              "Yatra",                       "Travel"),
+
+    # ── Fuel ─────────────────────────────────────────────────────────
+    (r"indianoil|iocl\b|indian\s*oil",        "Indian Oil",                  "Fuel"),
+    (r"hp\s*petrol|hpcl\b|hindustan\s*petroleum", "HP Petrol",               "Fuel"),
+    (r"bharat\s*petroleum|bpcl\b",            "Bharat Petroleum",            "Fuel"),
+    (r"shell\s*petrol|shell\b.*fuel",         "Shell",                       "Fuel"),
+    (r"reliance\s*petrol|nayara",             "Nayara Energy",               "Fuel"),
+
+    # ── Subscriptions ────────────────────────────────────────────────
+    (r"netflix",                              "Netflix",                     "Subscriptions"),
+    (r"hotstar|disney\s*\+\s*hotstar|jiohotstar|jio\s*hotstar",
+                                              "Hotstar",                     "Subscriptions"),
+    (r"spotify",                              "Spotify",                     "Subscriptions"),
+    (r"amazon\s*prime|prime\s*video",         "Amazon Prime",                "Subscriptions"),
+    (r"youtube\s*premium|youtube\s*music",    "YouTube Premium",             "Subscriptions"),
+    (r"sonyliv|sony\s*liv",                   "SonyLIV",                     "Subscriptions"),
+    (r"zee5\b",                               "ZEE5",                        "Subscriptions"),
+    (r"quick\s*tv|paytm-?83855917",           "QuickTV",                     "Subscriptions"),
+    (r"apple\.com|itunes|icloud",             "Apple",                       "Subscriptions"),
+    (r"google\s*storage|google\s*one",        "Google One",                  "Subscriptions"),
+    (r"chatgpt|openai",                       "ChatGPT",                     "Subscriptions"),
+
+    # ── Entertainment (one-time) ─────────────────────────────────────
+    (r"bookmyshow|book\s*my\s*show",          "BookMyShow",                  "Entertainment"),
+    (r"pvr\b|inox\b|pvrinox",                 "PVR INOX",                    "Entertainment"),
+
+    # ── Medical / pharmacy ───────────────────────────────────────────
+    (r"pharmeasy|pharm\s*easy",               "PharmEasy",                   "Medical"),
+    (r"1mg\b|onemg|tata\s*1mg",               "Tata 1mg",                    "Medical"),
+    (r"netmeds",                              "Netmeds",                     "Medical"),
+    (r"apollo\s*pharmacy|apollopharmacy",      "Apollo Pharmacy",             "Medical"),
+    (r"practo\b",                             "Practo",                      "Medical"),
+    (r"hospital|clinic|diagnostic|patholog",   "Medical",                     "Medical"),
+
+    # ── Insurance ────────────────────────────────────────────────────
+    (r"lic\s*of\s*india|licindia|lic\s*premium", "LIC",                      "Insurance"),
+    (r"star\s*health|starhealth",             "Star Health",                 "Insurance"),
+    (r"hdfc\s*ergo|hdfcergo",                 "HDFC Ergo",                   "Insurance"),
+    (r"icici\s*lombard|icicilombard",         "ICICI Lombard",               "Insurance"),
+    (r"policy\s*bazaar|policybazaar",         "PolicyBazaar",                "Insurance"),
+    (r"digit\s*insurance|godigit",            "Go Digit",                    "Insurance"),
+    (r"acko\b",                               "Acko",                        "Insurance"),
+
+    # ── Education ────────────────────────────────────────────────────
+    (r"udemy",                                "Udemy",                       "Education"),
+    (r"coursera",                             "Coursera",                    "Education"),
+    (r"unacademy",                            "Unacademy",                   "Education"),
+    (r"byju|byjus",                           "Byju's",                     "Education"),
+    (r"school\s*fee|college\s*fee|tuition",   "Education Fee",               "Education"),
+
+    # ── Government / tax ─────────────────────────────────────────────
+    (r"incometax|income\s*tax|e-?filing",     "Income Tax",                  "Government"),
+    (r"mcd\b|municipal|nagar\s*nigam",        "Municipal Tax",               "Government"),
+    (r"passport\s*seva|passport",             "Passport",                    "Government"),
+    (r"challan|traffic\s*fine|e-?challan",    "Traffic Challan",             "Government"),
+
+    # ── Rent ─────────────────────────────────────────────────────────
+    (r"\brent\b|house\s*rent|flat\s*rent",    "Rent",                        "Rent"),
+    (r"nobroker",                             "NoBroker",                    "Rent"),
+    (r"society\s*maintenance|maintenance\s*charge", "Society Maintenance",   "Rent"),
+
+    # ── Wallet add-money ─────────────────────────────────────────────
     (r"mbkwalletadd|one\s*mobikwik\s*systems.*mbkwallet", "MobiKwik Wallet", "Transfer"),
     (r"mbkprepaid",                           "MobiKwik Prepaid",            "Transfer"),
     (r"\bonemobikwik\b",                      "MobiKwik Wallet",             "Transfer"),
-    # --- CRED bill payment (liability settlement, not a spend) ---
-    (r"cred\.club|payment\s*on\s*cred|paidoncred|paidviacred|paid\s*via\s*cred", "CRED", "Bill Payment"),
-    # --- NBFC / lending (debits) ---
+
+    # ── CRED bill payment ────────────────────────────────────────────
+    (r"cred\.club|payment\s*on\s*cred|paidoncred|paidviacred|paid\s*via\s*cred",
+                                              "CRED",                        "Bill Payment"),
+
+    # ── NBFC / lending ───────────────────────────────────────────────
     (r"bajaj\s*finance|bflautopay|bajajfinance", "Bajaj Finance",            "Loans/EMI"),
     (r"navi\s*limited|navilimited",           "Navi",                        "Loans/EMI"),
-    # --- Loan disbursement (credits) ---
+    (r"home\s*credit|homecredit",             "Home Credit",                 "Loans/EMI"),
     (r"muthoot\s*finance|muthootfinance|rtgs\s*cr.*muthoot", "Muthoot Finance", "Income"),
-    # --- Investments ---
+
+    # ── Investments ──────────────────────────────────────────────────
     (r"icc?l\s*mutual\s*funds?|mfautopay|sip\s*registration", "Mutual Fund SIP", "Investments"),
     (r"zerodha|kite\s*broking",               "Zerodha",                     "Investments"),
-    (r"groww",                                "Groww",                       "Investments"),
-    # --- Salary ---
+    (r"groww\b",                              "Groww",                       "Investments"),
+    (r"coin\s*by\s*zerodha|coin\b.*zerodha",  "Zerodha Coin",                "Investments"),
+    (r"paytm\s*money",                        "Paytm Money",                 "Investments"),
+    (r"upstox",                               "Upstox",                      "Investments"),
+    (r"kuvera",                               "Kuvera",                      "Investments"),
+    (r"ppf\b|public\s*provident",             "PPF",                         "Investments"),
+    (r"nps\b|national\s*pension",             "NPS",                         "Investments"),
+
+    # ── Salary / income patterns ─────────────────────────────────────
     (r"chitlangia.*infotech|chitlangiainfotech", "Chitlangia Infotech (Salary)", "Income"),
     (r"finalsalary|final\s*salary",           "Salary",                      "Income"),
-    # --- Cash / branch ops ---
+    (r"\bsalary\b",                           "Salary",                      "Income"),
+
+    # ── Cash / branch ops ────────────────────────────────────────────
     (r"cash\s*deposit|cashdeposit",           "Cash Deposit",                "Transfer"),
-    # --- Bank charges ---
+    (r"atm\s*withdrawal|atm\s*wdl|atm\s*wd",  "ATM Withdrawal",             "Cash Spend"),
+    (r"cash\s*withdrawal|cwdr",               "Cash Withdrawal",             "Cash Spend"),
+
+    # ── Bank charges ─────────────────────────────────────────────────
     (r"debit\s*card\s*annual\s*fee|amc\s*fee","Bank Charge - Annual Fee",    "Bank Charges"),
     (r"sms\s*charge|sms\s*alerts",            "SMS Charge",                  "Bank Charges"),
     (r"\bgst\b|\bigst\b|\bcgst\b",            "GST",                         "Bank Charges"),
+    (r"insufficient\s*fund|isf\s*charge|bounce\s*charge", "Bounce Charge",   "Bank Charges"),
+    (r"min\s*balance|minimum\s*balance",      "Min Balance Charge",          "Bank Charges"),
 ]
 
 # "paid via mobikwik" is a payment rail, not the merchant. Strip before matching.
@@ -69,11 +197,8 @@ _RAIL_SUFFIXES = re.compile(
     re.IGNORECASE,
 )
 
-# UPI-XXXXXXX8666-SBIN0001602-... -> masked counterparty, last 4 digits preserved.
-_UPI_MASKED_RX = re.compile(
-    r"upi-x{4,}(\d{4})\b",
-    re.IGNORECASE,
-)
+# UPI-XXXXXXX8666-SBIN0001602-... -> masked counterparty
+_UPI_MASKED_RX = re.compile(r"upi-x{4,}(\d{4})\b", re.IGNORECASE)
 
 # Standard UPI: UPI-FIRSTNAME LASTNAME-HANDLE@BANK-...
 _UPI_PERSON_RX = re.compile(
