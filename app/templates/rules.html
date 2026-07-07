@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Category Rules — Finsight{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Category Rules</h1>
+    <p class="page-subtitle">Rules run before auto-detection. Lowest priority number wins.</p>
+  </div>
+  <form method="post" action="/rules/apply-all" style="margin:0">
+    <button type="submit" class="btn btn-secondary">Re-apply all rules to transactions</button>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="card-header"><h2 style="margin:0;font-size:1rem;font-weight:600">Add new rule</h2></div>
+  <div class="card-body">
+    <form method="post" action="/rules/add" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:0.25rem;flex:2;min-width:180px">
+        <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary)">IF NARRATION CONTAINS</label>
+        <input name="match_pattern" required placeholder="e.g. SELF, rent, salary"
+          style="padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:6px;font-size:0.875rem;background:var(--surface);color:var(--text-primary)">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.25rem;min-width:130px">
+        <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary)">MATCH TYPE</label>
+        <select name="match_type"
+          style="padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:6px;font-size:0.875rem;background:var(--surface);color:var(--text-primary)">
+          <option value="contains">Contains</option>
+          <option value="exact">Exact</option>
+          <option value="regex">Regex</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.25rem;flex:2;min-width:160px">
+        <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary)">THEN CATEGORY =</label>
+        <input name="category" required list="cat-list" placeholder="e.g. Owner's Drawing"
+          style="padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:6px;font-size:0.875rem;background:var(--surface);color:var(--text-primary)">
+        <datalist id="cat-list">
+          {% for c in category_suggestions %}<option value="{{ c }}">{% endfor %}
+        </datalist>
+      </div>
+      <input name="priority" type="hidden" value="100">
+      <button type="submit" class="btn btn-primary" style="white-space:nowrap">Add rule</button>
+    </form>
+    <p style="margin:0.75rem 0 0;font-size:0.75rem;color:var(--text-secondary)">
+      <strong>Contains</strong> matches anywhere in the narration (case-insensitive).
+      <strong>Priority 1</strong> runs first. Example: pattern <code>SELF</code>, category <code>Owner's Drawing</code>.
+    </p>
+  </div>
+</div>
+
+{% if rules %}
+<div class="card">
+  <div class="card-body" style="padding:0">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:600;color:var(--text-secondary)">PRI</th>
+          <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:600;color:var(--text-secondary)">IF NARRATION</th>
+          <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:600;color:var(--text-secondary)">TYPE</th>
+          <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:600;color:var(--text-secondary)">THEN CATEGORY</th>
+          <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:600;color:var(--text-secondary)">USED</th>
+          <th style="padding:0.75rem 1rem;text-align:left;font-size:0.75rem;font-weight:600;color:var(--text-secondary)">STATUS</th>
+          <th style="padding:0.75rem 1rem;text-align:right;font-size:0.75rem;font-weight:600;color:var(--text-secondary)">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule in rules %}
+        <tr style="border-bottom:1px solid var(--border);{% if not rule.is_active %}opacity:0.45;{% endif %}">
+          <td style="padding:0.75rem 1rem;font-size:0.875rem;color:var(--text-secondary);font-weight:600">{{ rule.priority }}</td>
+          <td style="padding:0.75rem 1rem">
+            <code style="background:var(--surface-hover,#f1f5f9);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.8rem">{{ rule.match_pattern }}</code>
+          </td>
+          <td style="padding:0.75rem 1rem;font-size:0.8rem;color:var(--text-secondary)">{{ rule.match_type }}</td>
+          <td style="padding:0.75rem 1rem">
+            <span style="background:#eff6ff;color:#2563eb;padding:0.2rem 0.6rem;border-radius:99px;font-size:0.78rem;font-weight:600">
+              {{ rule.category }}
+            </span>
+          </td>
+          <td style="padding:0.75rem 1rem;font-size:0.875rem;color:var(--text-secondary)">{{ rule.times_applied or 0 }}x</td>
+          <td style="padding:0.75rem 1rem;font-size:0.8rem">
+            {% if rule.is_active %}<span style="color:#16a34a;font-weight:600">Active</span>
+            {% else %}<span style="color:var(--text-secondary)">Paused</span>{% endif %}
+          </td>
+          <td style="padding:0.75rem 1rem;text-align:right">
+            {% if rule.user_id %}
+            <form method="post" action="/rules/{{ rule.id }}/toggle" style="display:inline;margin:0">
+              <button type="submit" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.25rem 0.6rem;font-size:0.75rem;cursor:pointer;color:var(--text-secondary);margin-right:0.4rem">
+                {% if rule.is_active %}Pause{% else %}Resume{% endif %}
+              </button>
+            </form>
+            <form method="post" action="/rules/{{ rule.id }}/delete" style="display:inline;margin:0"
+              onsubmit="return confirm('Delete this rule?')">
+              <button type="submit" style="background:none;border:1px solid #fca5a5;border-radius:4px;padding:0.25rem 0.6rem;font-size:0.75rem;cursor:pointer;color:#dc2626">
+                Delete
+              </button>
+            </form>
+            {% else %}
+            <span style="font-size:0.75rem;color:var(--text-secondary)">Built-in</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:3rem">
+    <p style="color:var(--text-secondary);margin:0">No rules yet. Add your first rule above.</p>
+    <p style="color:var(--text-secondary);font-size:0.875rem;margin:0.5rem 0 0">
+      Example: pattern <code>SELF</code> then category <code>Owner's Drawing</code>
+    </p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

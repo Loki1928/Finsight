@@ -89,6 +89,7 @@ class CanonicalEvent(Base):
     reconciliation_level = Column(Integer)
     reconciliation_evidence = Column(Text)
     notes = Column(Text)
+    generated_description = Column(Text)
     tags = Column(String)
     is_user_edited = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -113,6 +114,7 @@ class CategoryRule(Base):
     is_active = Column(Integer, default=1)
     times_applied = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"))
 
 
 class AuditLog(Base):

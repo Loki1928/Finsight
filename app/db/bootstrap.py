@@ -89,3 +89,30 @@ def get_default_account_id() -> int:
 def get_default_cash_account_id() -> int:
     """Return the id of the default Cash account. Creates it if missing."""
     return ensure_default_cash_account()
+
+def run_migrations(db_session_factory=None) -> None:
+    """Idempotent schema migrations. Safe to run on every startup."""
+    from sqlalchemy import text
+    db = (db_session_factory or SessionLocal)()
+    try:
+        # Migration: add generated_description to canonical_events
+        try:
+            db.execute(text(
+                "ALTER TABLE canonical_events ADD COLUMN generated_description TEXT"
+            ))
+            db.commit()
+            print("[migration] Added generated_description column.")
+        except Exception:
+            db.rollback()  # column already exists, safe to ignore
+
+        # Migration: add user_id to category_rules if missing
+        try:
+            db.execute(text(
+                "ALTER TABLE category_rules ADD COLUMN user_id INTEGER REFERENCES users(id)"
+            ))
+            db.commit()
+            print("[migration] Added user_id to category_rules.")
+        except Exception:
+            db.rollback()
+    finally:
+        db.close()

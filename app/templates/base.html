@@ -14,6 +14,7 @@
         <a href="/" class="{% if request.url.path == '/' %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Dashboard</a>
         <a href="/transactions" class="{% if '/transactions' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Transactions</a>
         <a href="/categories" class="{% if '/categories' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Categories</a>
+        <a href="/rules" class="{% if '/rules' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Rules</a>
         <a href="/upload" class="{% if '/upload' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Upload</a>
         <a href="/feedback" class="{% if '/feedback' in request.url.path %}text-slate-900 font-medium{% else %}text-slate-600 hover:text-slate-900{% endif %}">Feedback</a>
       </div>

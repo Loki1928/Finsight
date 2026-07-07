@@ -104,7 +104,9 @@ def recategorize_all(
     updated = 0
     for event in events:
         old_category = event.category
-        categorize_event(event)
+        if event.is_user_edited:
+            continue
+        categorize_event(event, db)
         if event.category != old_category:
             updated += 1
 

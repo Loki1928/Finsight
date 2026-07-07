@@ -114,16 +114,37 @@
       {% for r in rows %}
       <tr class="border-b border-slate-100 hover:bg-slate-50" id="row-{{ r.id }}">
         <td class="px-4 py-2 whitespace-nowrap text-slate-600">{{ r.event_date.strftime('%d %b %Y') }}</td>
-        <td class="px-4 py-2">
-          <span class="text-slate-900"
-                {% if r.merchant_raw and r.merchant_raw != r.merchant_normalized %}
-                title="Raw: {{ r.merchant_raw[:100] }}"
-                {% endif %}>
-            {{ r.merchant_normalized or r.merchant_raw or "—" }}
-          </span>
-          {% if r.is_user_edited %}
-            <span class="ml-1.5 inline-block text-[10px] uppercase tracking-wide font-semibold bg-slate-100 text-slate-500 border border-slate-200 rounded px-1.5 py-0.5 align-middle">manual</span>
-          {% endif %}
+        <td class="px-4 py-2" style="max-width:280px">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span class="text-slate-900 font-medium"
+                  {% if r.merchant_raw and r.merchant_raw != r.merchant_normalized %}
+                  title="Raw: {{ r.merchant_raw[:120] }}"
+                  {% endif %}>
+              {{ r.merchant_normalized or r.merchant_raw or "Unknown" }}
+              {% if r.is_user_edited %}
+                <span class="ml-1 inline-block text-[10px] uppercase tracking-wide font-semibold bg-slate-100 text-slate-500 border border-slate-200 rounded px-1.5 py-0.5 align-middle">manual</span>
+              {% endif %}
+            </span>
+            {% if r.generated_description %}
+              <span style="font-size:0.75rem;color:var(--text-secondary,#64748b)">{{ r.generated_description }}</span>
+            {% endif %}
+            {% if r.notes %}
+              <span style="font-size:0.75rem;color:#2563eb;font-style:italic" title="Your note">{{ r.notes }}</span>
+            {% endif %}
+            <!-- Inline notes form -->
+            <span class="notes-trigger" style="font-size:0.72rem;color:#94a3b8;cursor:pointer;display:none"
+                  onclick="showNotesForm({{ r.id }})">+ add note</span>
+            <form method="POST" action="/transactions/{{ r.id }}/notes"
+                  class="notes-form" id="notes-form-{{ r.id }}"
+                  style="display:none;margin-top:2px;gap:4px;align-items:center">
+              <input name="notes" type="text" value="{{ r.notes or '' }}"
+                     placeholder="Add a note..."
+                     style="font-size:0.75rem;padding:2px 6px;border:1px solid #cbd5e1;border-radius:4px;width:160px;background:var(--surface,#fff);color:var(--text-primary,#0f172a)">
+              <button type="submit" style="font-size:0.72rem;padding:2px 8px;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer">Save</button>
+              <button type="button" onclick="hideNotesForm({{ r.id }})"
+                      style="font-size:0.72rem;padding:2px 6px;background:none;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer;color:#64748b">Cancel</button>
+            </form>
+          </div>
         </td>
         <td class="px-4 py-2" id="cat-cell-{{ r.id }}">
           <!-- Category display (click to edit) -->

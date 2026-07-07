@@ -7,10 +7,10 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.db.session import engine, Base
 from app.models import models  # noqa: F401 — ensures models register with Base
-from app.api import dashboard, uploads, transactions, feedback, account, categories
+from app.api import dashboard, uploads, transactions, feedback, account, categories, rules
 from app.auth import routes as auth_routes
 from app.auth.dependencies import _RedirectToLogin
-from app.db.bootstrap import ensure_default_accounts
+from app.db.bootstrap import run_migrations,  ensure_default_accounts
 
 
 app = FastAPI(title="Finsight", version="0.1.0")
@@ -58,6 +58,7 @@ def _startup():
 
     Base.metadata.create_all(bind=engine)
     ensure_default_accounts()
+    run_migrations()
 
     is_postgres = engine.dialect.name == "postgresql"
     tables = ["canonical_events", "uploads", "raw_transactions"]
@@ -104,6 +105,7 @@ app.include_router(transactions.router)
 app.include_router(feedback.router)
 app.include_router(account.router)
 app.include_router(categories.router)
+app.include_router(rules.router)
 
 
 @app.get("/terms")
